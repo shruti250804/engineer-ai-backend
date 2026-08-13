@@ -2,13 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import engine, SessionLocal, get_db
 from . import models
-from .schemas import RepositoryCreate
+from .schemas import RepositoryCreate, RepositoryResponse
 from .models import Repository
 
 app=FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
-@app.post("/repositories")
+@app.post("/repositories",response_model=RepositoryResponse)
 def create_repository(
     repository: RepositoryCreate,
     db: Session = Depends(get_db)
@@ -25,7 +25,7 @@ def create_repository(
 
     return db_repo
 
-@app.get("/repositories")
+@app.get("/repositories", response_model=list[RepositoryResponse])
 def get_repositories(
     db: Session = Depends(get_db)
 ):
@@ -34,7 +34,7 @@ def get_repositories(
 
 
 # GET BY ID
-@app.get("/repositories/{repo_id}")
+@app.get("/repositories/{repo_id}",response_model=RepositoryResponse)
 def get_repository(
     repo_id: int,
     db: Session = Depends(get_db)
@@ -51,7 +51,7 @@ def get_repository(
 
     return repo
 
-@app.put("/repositories/{repo_id}")
+@app.put("/repositories/{repo_id}",response_model=RepositoryResponse)
 def update_repository(
     repo_id: int,
     repository: RepositoryCreate,
@@ -97,3 +97,4 @@ def delete_repository(
     return {
         "message": "Repository deleted successfully"
     }
+
