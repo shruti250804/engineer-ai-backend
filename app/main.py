@@ -2,8 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import engine, SessionLocal, get_db
 from . import models
-from .schemas import RepositoryCreate, RepositoryResponse
-from .models import Repository
+from .schemas import RepositoryCreate, RepositoryResponse, UserCreate, UserResponse, UserLogin
+from .models import Repository, User
+from .auth import hash_password, verify_password, create_access_token, get_current_user
 
 app=FastAPI()
 models.Base.metadata.create_all(bind=engine)
@@ -39,6 +40,7 @@ def create_repository(
     description="Returns all repositories from the database."
 )
 def get_repositories(
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repositories = db.query(Repository).all()
@@ -127,3 +129,75 @@ def delete_repository(
         "message": "Repository deleted successfully"
     }
 
+@app.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=201,
+    tags=["Authentication"],
+    summary="Register a new user"
+)
+def register_user(
+    user: UserCreate,
+    db: Session = Depends(get_db)
+):
+
+    existing_user = db.query(User).filter(
+        User.username == user.username
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already exists"
+        )
+
+    hashed_password = hash_password(user.password)
+
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+@app.post(
+    "/login",
+    tags=["Authentication"],
+    summary="Login user"
+)
+def login_user(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+):
+    db_user = db.query(User).filter(
+        User.email == user.email
+    ).first()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    if not verify_password(
+        user.password,
+        db_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    token = create_access_token(
+    {"sub": db_user.email}
+)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
