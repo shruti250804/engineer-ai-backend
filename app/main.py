@@ -7,8 +7,14 @@ from .models import Repository
 
 app=FastAPI()
 models.Base.metadata.create_all(bind=engine)
-
-@app.post("/repositories",response_model=RepositoryResponse)
+@app.post(
+    "/repositories",
+    response_model=RepositoryResponse,
+    status_code=201,
+    tags=["Repositories"],
+    summary="Create a repository",
+    description="Creates a new repository in the database."
+)
 def create_repository(
     repository: RepositoryCreate,
     db: Session = Depends(get_db)
@@ -25,7 +31,13 @@ def create_repository(
 
     return db_repo
 
-@app.get("/repositories", response_model=list[RepositoryResponse])
+@app.get(
+    "/repositories",
+    response_model=list[RepositoryResponse],
+    tags=["Repositories"],
+    summary="Get all repositories",
+    description="Returns all repositories from the database."
+)
 def get_repositories(
     db: Session = Depends(get_db)
 ):
@@ -34,7 +46,13 @@ def get_repositories(
 
 
 # GET BY ID
-@app.get("/repositories/{repo_id}",response_model=RepositoryResponse)
+@app.get(
+    "/repositories/{repo_id}",
+    response_model=RepositoryResponse,
+    tags=["Repositories"],
+    summary="Get repository by ID",
+    description="Returns a repository using its ID."
+)
 def get_repository(
     repo_id: int,
     db: Session = Depends(get_db)
@@ -51,7 +69,13 @@ def get_repository(
 
     return repo
 
-@app.put("/repositories/{repo_id}",response_model=RepositoryResponse)
+@app.put(
+    "/repositories/{repo_id}",
+    response_model=RepositoryResponse,
+    tags=["Repositories"],
+    summary="Update repository",
+    description="Updates an existing repository."
+)
 def update_repository(
     repo_id: int,
     repository: RepositoryCreate,
@@ -76,7 +100,12 @@ def update_repository(
 
     return repo
 
-@app.delete("/repositories/{repo_id}")
+@app.delete(
+    "/repositories/{repo_id}",
+    tags=["Repositories"],
+    summary="Delete repository",
+    description="Deletes a repository by ID."
+)
 def delete_repository(
     repo_id: int,
     db: Session = Depends(get_db)
