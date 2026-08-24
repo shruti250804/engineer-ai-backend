@@ -7,6 +7,7 @@ class Repository(Base):
     name=Column(String)
     github_url=Column(String)
     description=Column(String)
+    owner_id = Column(Integer)
 
 class User(Base):
     __tablename__ = "users"

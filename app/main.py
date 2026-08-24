@@ -19,13 +19,14 @@ models.Base.metadata.create_all(bind=engine)
 )
 def create_repository(
     repository: RepositoryCreate,
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     db_repo = Repository(
         name=repository.name,
-        github_url=repository.github_url,
-        description=repository.description
+        github_url=str(repository.github_url),
+        description=repository.description,
+        owner_id=current_user.id
     )
 
     db.add(db_repo)
@@ -95,6 +96,11 @@ def update_repository(
             status_code=404,
             detail="Repository not found"
         )
+    if repo.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized"
+        )
 
     repo.name = repository.name
     repo.github_url = repository.github_url
@@ -124,6 +130,11 @@ def delete_repository(
         raise HTTPException(
             status_code=404,
             detail="Repository not found"
+        )
+    if repo.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized"
         )
 
     db.delete(repo)
