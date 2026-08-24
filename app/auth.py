@@ -29,10 +29,6 @@ def verify_password(
         hashed_password
     )
 
-SECRET_KEY = "my_super_secret_key_change_this"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
 def create_access_token(data: dict):
     to_encode = data.copy()
 

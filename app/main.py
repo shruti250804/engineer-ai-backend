@@ -2,9 +2,10 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import engine, SessionLocal, get_db
 from . import models
-from .schemas import RepositoryCreate, RepositoryResponse, UserCreate, UserResponse, UserLogin
+from .schemas import RepositoryCreate, RepositoryResponse, UserCreate, UserResponse
 from .models import Repository, User
 from .auth import hash_password, verify_password, create_access_token, get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
 app=FastAPI()
 models.Base.metadata.create_all(bind=engine)
@@ -18,6 +19,7 @@ models.Base.metadata.create_all(bind=engine)
 )
 def create_repository(
     repository: RepositoryCreate,
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     db_repo = Repository(
@@ -81,6 +83,7 @@ def get_repository(
 def update_repository(
     repo_id: int,
     repository: RepositoryCreate,
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = db.query(Repository).filter(
@@ -110,6 +113,7 @@ def update_repository(
 )
 def delete_repository(
     repo_id: int,
+    current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = db.query(Repository).filter(
@@ -171,11 +175,11 @@ def register_user(
     summary="Login user"
 )
 def login_user(
-    user: UserLogin,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     db_user = db.query(User).filter(
-        User.email == user.email
+        User.email == form_data.username
     ).first()
 
     if not db_user:
@@ -185,7 +189,7 @@ def login_user(
         )
 
     if not verify_password(
-        user.password,
+        form_data.password,
         db_user.hashed_password
     ):
         raise HTTPException(
