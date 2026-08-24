@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .database import engine, SessionLocal, get_db
+from .database import engine, get_db
 from . import models
 from .schemas import RepositoryCreate, RepositoryResponse, UserCreate, UserResponse
 from .models import Repository, User
@@ -43,10 +43,13 @@ def create_repository(
     description="Returns all repositories from the database."
 )
 def get_repositories(
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    repositories = db.query(Repository).all()
+    repositories = db.query(Repository).filter(
+        Repository.owner_id == current_user.id
+    ).all()
+
     return repositories
 
 
@@ -60,6 +63,7 @@ def get_repositories(
 )
 def get_repository(
     repo_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = db.query(Repository).filter(
@@ -70,6 +74,11 @@ def get_repository(
         raise HTTPException(
             status_code=404,
             detail="Repository not found"
+        )
+    if repo.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized"
         )
 
     return repo
@@ -84,7 +93,7 @@ def get_repository(
 def update_repository(
     repo_id: int,
     repository: RepositoryCreate,
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = db.query(Repository).filter(
@@ -103,7 +112,7 @@ def update_repository(
         )
 
     repo.name = repository.name
-    repo.github_url = repository.github_url
+    repo.github_url = str(repository.github_url)
     repo.description = repository.description
 
     db.commit()
@@ -119,7 +128,7 @@ def update_repository(
 )
 def delete_repository(
     repo_id: int,
-    current_user: str = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     repo = db.query(Repository).filter(
