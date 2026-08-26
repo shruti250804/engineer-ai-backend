@@ -8,7 +8,6 @@ from .auth import hash_password, verify_password, create_access_token, get_curre
 from fastapi.security import OAuth2PasswordRequestForm
 
 app=FastAPI()
-models.Base.metadata.create_all(bind=engine)
 @app.post(
     "/repositories",
     response_model=RepositoryResponse,
