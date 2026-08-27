@@ -6,6 +6,11 @@ from .schemas import RepositoryCreate, RepositoryResponse, UserCreate, UserRespo
 from .models import Repository, User
 from .auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from app.schemas import RepoAnalyzeRequest
+from app.github_service import (
+    parse_github_url,
+    get_repo_info
+)
 
 app=FastAPI()
 @app.post(
@@ -223,4 +228,34 @@ def login_user(
     return {
         "access_token": token,
         "token_type": "bearer"
+    }
+
+from .github_service import get_repo_info
+
+@app.get("/test-github")
+def test_github():
+    return get_repo_info(
+        "fastapi",
+        "fastapi"
+    )
+
+@app.post("/analyze-repository")
+def analyze_repository(
+    request: RepoAnalyzeRequest
+):
+    owner, repo = parse_github_url(
+        request.github_url
+    )
+
+    data = get_repo_info(
+        owner,
+        repo
+    )
+
+    return {
+        "name": data["name"],
+        "description": data["description"],
+        "stars": data["stargazers_count"],
+        "language": data["language"],
+        "owner": data["owner"]["login"]
     }

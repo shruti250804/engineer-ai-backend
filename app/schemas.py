@@ -31,3 +31,5 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class RepoAnalyzeRequest(BaseModel):
+    github_url: str
